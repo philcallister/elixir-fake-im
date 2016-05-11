@@ -11,7 +11,9 @@ defmodule ElixirFakeIm do
     import Supervisor.Spec
 
     children = [
-      supervisor(Task.Supervisor, [[name: ElixirFakeIm.TaskSupervisor]]),
+      supervisor(Task.Supervisor, [[name: ElixirFakeIm.SocketSupervisor]]),
+      supervisor(ElixirFakeIm.MQSupervisor, []),
+      worker(ElixirFakeIm.UserPool, []),
       worker(Task, [ElixirFakeIm.SocketServer, :accept, [10408]])
     ]
 
