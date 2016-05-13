@@ -2,62 +2,81 @@ require Logger
 
 defmodule ElixirFakeIm.SocketConnection do
 
+  alias ElixirFakeIm.Command
   alias ElixirFakeIm.UserPool
-  alias ElixirFakeIm.MQ
 
-  def serve(socket) do
-    msg_name =
-      case read_line(socket) do
-        {:ok, name} ->
-          name_received(socket, name)
-        {:error, _} = error -> 
-          error
-      end
-    write_line(socket, msg_name)
-    serve(socket, msg_name)
-  end
-
-  defp name_received(socket, name) do
-    stripped = String.strip(name)
-    Logger.info("User: #{stripped}")
-    {:ok, mq_pid} = UserPool.create(UserPool, stripped)
-    MQ.put_socket(mq_pid, socket)
-    {:ok, stripped}
-  end
-
-  defp serve(socket, msg_name) do
-    msg =
+  ##
+  # Wait for login here...
+  def login(socket) do
+    msg = 
       case read_line(socket) do
         {:ok, data} ->
-          Logger.info("[#{elem(msg_name, 1)}] Received: #{data}")
-          String.split(data, " ", trim: true)
-          {:ok, String.split(data, ":", trim: true)}
-        {:error, _} = error -> {error, msg_name}
+          case Command.parse_login(data) do
+            {:ok, _user} = command ->
+              Command.run_login(socket, command)
+            {:error, _} = error ->
+              error
+          end
+        {:error, _} = error ->
+          error
       end
+
     write_line(socket, msg)
-    serve(socket, msg_name)
+
+    case msg do
+      {:error, _} -> 
+        login(socket)
+      _ ->
+        serve(socket, msg)
+    end
+
+  end
+
+  defp serve(socket, {:ok, from_name}) do
+    msg = 
+      case read_line(socket) do
+        {:ok, data} ->
+          case Command.parse(data) do
+            {:ok, command} ->
+              Command.run(socket, command)
+            {:error, _} = error ->
+              error
+          end
+        {:error, _} = error -> error
+      end
+    write_line(socket, from_name, msg)
+    serve(socket, {:ok, from_name})
   end
 
   defp read_line(socket) do
     :gen_tcp.recv(socket, 0)
   end
 
-  defp write_line(_socket, {:ok, [name|msg]}) do
-    {:ok, mq_pid} = UserPool.lookup(UserPool, name)
-    socket = MQ.get_socket(mq_pid)
-    :gen_tcp.send(socket, "Sending [#{name}]: #{msg}\n")
+  defp write_line(socket, {:ok, name}) do
+    :gen_tcp.send(socket, "Sending [#{name}]: LOGGED IN\n")
   end
 
-  defp write_line(socket, {{:error, :unknown_command}, {:ok, name}}) do
+  defp write_line(socket, {:error, :login_required}) do
+    :gen_tcp.send(socket, "LOGIN REQUIRED\n")
+  end
+
+  defp write_line(socket, name, {:ok, msg, [{_to_user, to_socket}|users]}) do
+    :gen_tcp.send(to_socket, "Sending [#{name}]: #{msg}\n")
+    write_line(socket, name, {:ok, msg, users})
+  end
+  defp write_line(_socket, _name, {:ok, _msg, []}), do: []
+
+
+  defp write_line(socket, _name, {:error, :unknown_command}) do
     :gen_tcp.send(socket, "UNKNOWN COMMAND\n")
   end
 
-  defp write_line(_socket, {{:error, :closed}, {:ok, name}}) do
+  defp write_line(_socket, name, {:error, :closed}) do
     mq_shutdown(name)
     exit(:shutdown)
   end
 
-  defp write_line(socket, {{:error, error}, {:ok, name}}) do
+  defp write_line(socket, name, {:error, error}) do
     mq_shutdown(name)
     :gen_tcp.send(socket, "ERROR\n")
     exit(error)
