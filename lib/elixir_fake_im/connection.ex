@@ -1,6 +1,6 @@
 require Logger
 
-defmodule ElixirFakeIm.SocketConnection do
+defmodule ElixirFakeIm.Connection do
 
   alias ElixirFakeIm.Command
   alias ElixirFakeIm.SIO

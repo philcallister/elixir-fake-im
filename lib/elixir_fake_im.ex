@@ -12,9 +12,11 @@ defmodule ElixirFakeIm do
 
     children = [
       supervisor(Task.Supervisor, [[name: ElixirFakeIm.SocketSupervisor]]),
-      supervisor(ElixirFakeIm.MQSupervisor, []),
+      supervisor(ElixirFakeIm.UserAgentSupervisor, []),
+      supervisor(ElixirFakeIm.GroupAgentSupervisor, []),
       worker(ElixirFakeIm.UserPool, []),
-      worker(Task, [ElixirFakeIm.SocketServer, :accept, [10408]])
+      worker(ElixirFakeIm.GroupPool, []),
+      worker(Task, [ElixirFakeIm.Server, :accept, [10408]])
     ]
 
     opts = [strategy: :one_for_one, name: ElixirFakeIm.Supervisor]

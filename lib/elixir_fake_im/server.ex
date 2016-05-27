@@ -1,8 +1,8 @@
 require Logger
 
-defmodule ElixirFakeIm.SocketServer do
+defmodule ElixirFakeIm.Server do
 
-  alias ElixirFakeIm.SocketConnection
+  alias ElixirFakeIm.Connection
 
   def accept(port) do
     opts = [:binary, packet: :line, active: false, reuseaddr: true]
@@ -13,7 +13,7 @@ defmodule ElixirFakeIm.SocketServer do
 
   defp loop_acceptor(socket) do
     {:ok, client} = :gen_tcp.accept(socket)
-    {:ok, pid} = Task.Supervisor.start_child(ElixirFakeIm.SocketSupervisor, fn -> SocketConnection.login(client) end)
+    {:ok, pid} = Task.Supervisor.start_child(ElixirFakeIm.SocketSupervisor, fn -> Connection.login(client) end)
     :ok = :gen_tcp.controlling_process(client, pid)
     loop_acceptor(socket)
   end

@@ -1,6 +1,6 @@
 require Logger
 
-defmodule ElixirFakeIm.UserPool do
+defmodule ElixirFakeIm.GroupPool do
   use GenServer
 
   ## Client API
@@ -30,10 +30,10 @@ defmodule ElixirFakeIm.UserPool do
 
   def handle_call({:create, name}, _from, {names, refs}) do
     if !Map.has_key?(names, name) do
-      {:ok, ua_pid} = ElixirFakeIm.UserAgentSupervisor.start_user_agent
-      ref = Process.monitor(ua_pid)
+      {:ok, ga_pid} = ElixirFakeIm.GroupAgentSupervisor.start_group_agent
+      ref = Process.monitor(ga_pid)
       refs = Map.put(refs, ref, name)
-      names = Map.put(names, name, ua_pid)
+      names = Map.put(names, name, ga_pid)
     end
     {:reply, Map.fetch(names, name), {names, refs}}
   end
