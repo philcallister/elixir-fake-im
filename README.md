@@ -1,20 +1,60 @@
-# ElixirFakeIm
+# Fake IM
+This example, by [Phil Callister](http://github.com/philcallister), is an example client/server application that demonstrates an Elixir
+Instant Messenger. It makes no attempt to follow standards, such as XMPP.
 
-**TODO: Add description**
+## Environment
 
-## Installation
+The sample was developed using the following 
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+- Elixir 1.2.4
+- OS X El Capitan (10.11)
 
-  1. Add elixir_fake_im to your list of dependencies in `mix.exs`:
+## Setup
 
-        def deps do
-          [{:elixir_fake_im, "~> 0.0.1"}]
-        end
+Clone Repo
+```bash
+git clone https://github.com/philcallister/elixir-fake-im.git
+```
 
-  2. Ensure elixir_fake_im is started before your application:
+## Run It
 
-        def application do
-          [applications: [:elixir_fake_im]]
-        end
+Start the server
 
+```bash
+mix elixir_fake_im.server
+OR
+iex -S mix
+```
+
+Start a telnet client
+
+```bash
+telnet localhost 10408
+login:phil
+group:subscribe:group1
+```
+
+Start another telnet client
+
+```bash
+telnet localhost 10408
+login:amy
+user:phil:HELLO
+group:subscribe:group1
+```
+
+One more telnet client
+
+```bash
+telnet localhost 10408
+login:nick
+group:subscribe:group1
+group:group1:HELLO GROUP1!!
+logout
+```
+
+## License
+
+[MIT License](http://www.opensource.org/licenses/MIT)
+
+**Free Software, Hell Yeah!**
