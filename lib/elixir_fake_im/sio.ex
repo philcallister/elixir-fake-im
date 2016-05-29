@@ -27,19 +27,19 @@ defmodule ElixirFakeIm.SIO do
   end
 
   def write_line(_socket, name, {:error, :closed}) do
-    mq_shutdown(name)
+    ua_shutdown(name)
     exit(:shutdown)
   end
 
   def write_line(socket, name, {:error, error}) do
-    mq_shutdown(name)
+    ua_shutdown(name)
     :gen_tcp.send(socket, "ERROR\r\n")
     exit(error)
   end
 
-  def mq_shutdown(name) do
-    {:ok, mq_pid} = UserPool.lookup(UserPool, name)
-    Process.exit(mq_pid, :shutdown)
+  def ua_shutdown(name) do
+    {:ok, ua_pid} = UserPool.lookup(UserPool, name)
+    Process.exit(ua_pid, :shutdown)
   end
 
 end
