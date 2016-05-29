@@ -16,6 +16,11 @@ defmodule ElixirFakeIm.UserAgent do
     Agent.get(ua, &Map.get(&1, :groups))
   end
 
+  def is_subscribed?(ua, group) do
+    groups = Agent.get(ua, &Map.get(&1, :groups))
+    !!Enum.find(groups, fn(g) -> g == group end)
+  end
+
   def add_group(ua, value) do
     Agent.update(ua, fn(map) ->
       groups = Map.get(map, :groups)

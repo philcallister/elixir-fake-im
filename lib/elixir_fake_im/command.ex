@@ -2,6 +2,8 @@ require Logger
 
 alias ElixirFakeIm.UserPool
 alias ElixirFakeIm.UserAgent
+alias ElixirFakeIm.GroupPool
+alias ElixirFakeIm.GroupAgent
 
 defmodule ElixirFakeIm.Command do
 
@@ -19,8 +21,8 @@ defmodule ElixirFakeIm.Command do
 
   ## login:<user>
   def run_login(socket, {:ok, user}) do
-    {:ok, mq_pid} = UserPool.create(UserPool, user)
-    UserAgent.put_socket(mq_pid, socket)
+    {:ok, ua_pid} = UserPool.create(UserPool, user)
+    UserAgent.put_socket(ua_pid, socket)
     Logger.info("Login: #{user}")
     {:ok, user}
   end
@@ -59,8 +61,8 @@ defmodule ElixirFakeIm.Command do
   ## user:<to_user>:<msg>
   def run(_socket, _from_user, {:user, to_user, msg}) do
     case UserPool.lookup(UserPool, to_user) do
-      {:ok, mq_pid} ->
-        to_socket = UserAgent.get_socket(mq_pid)
+      {:ok, ua_pid} ->
+        to_socket = UserAgent.get_socket(ua_pid)
         {:ok, msg, [{to_user, to_socket}]}
       :error ->
         {:error, :msg, "[#{to_user}] USER DISCONNECTED"}
@@ -71,26 +73,24 @@ defmodule ElixirFakeIm.Command do
 
   ## group:list
   def run(socket, from_user, {:group, :list}) do
-    case UserPool.lookup(UserPool, from_user) do
-      {:ok, mq_pid} ->
-        groups = UserAgent.get_groups(mq_pid)
-        msg = case groups do
-          [] -> "[]"
-          _  ->
-            s = Enum.reduce(groups, fn(x, acc) -> "#{acc} | #{x}" end)
-            "[#{s}]"
-        end
-        {:ok, msg, [{from_user, socket}]}
+    {:ok, ua_pid} = UserPool.lookup(UserPool, from_user)
+    groups = UserAgent.get_groups(ua_pid)
+    msg = case groups do
+      [] -> "[]"
+      _  ->
+        s = Enum.reduce(groups, fn(x, acc) -> "#{acc} | #{x}" end)
+        "[#{s}]"
     end
+    {:ok, msg, [{from_user, socket}]}
   end
 
   ## group:subscribe:<group>
   def run(socket, from_user, {:group, :subscribe, group}) do
-    case UserPool.lookup(UserPool, from_user) do
-      {:ok, mq_pid} ->
-        UserAgent.add_group(mq_pid, group)
-        {:ok, "GROUP:SUBSCRIBE:#{group}", [{from_user, socket}]}
-    end
+    {:ok, ga_pid} = GroupPool.create(GroupPool, group)
+    GroupAgent.add_socket(ga_pid, socket)
+    {:ok, ua_pid} = UserPool.lookup(UserPool, from_user)
+    UserAgent.add_group(ua_pid, group)
+    {:ok, "GROUP:SUBSCRIBE:#{group}", [{from_user, socket}]}
   end
 
   ## group:unsubscribe:<group>
@@ -99,8 +99,17 @@ defmodule ElixirFakeIm.Command do
   end
 
   ## group:<group>:<msg>
-  def run(socket, from_user, {:group, group, msg}) do
-    {:ok, "GROUP:#{group}:#{msg}", [{from_user, socket}]}
+  def run(_socket, from_user, {:group, group, msg}) do
+    {:ok, ua_pid} = UserPool.lookup(UserPool, from_user)
+    case UserAgent.is_subscribed?(ua_pid, group) do
+      true ->
+        {:ok, ga_pid} = GroupPool.lookup(GroupPool, group)
+        sockets = GroupAgent.get_sockets(ga_pid)
+        groups = Enum.map(sockets, fn(to_socket) -> {from_user, to_socket} end)
+        {:ok, msg, groups}
+      _ ->
+        {:error, :msg, "NOT SUBSCRIBED TO [#{group}]"}
+    end
   end
 
 end
