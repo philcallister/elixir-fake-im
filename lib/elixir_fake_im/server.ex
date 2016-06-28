@@ -13,7 +13,7 @@ defmodule ElixirFakeIm.Server do
 
   defp loop_acceptor(socket) do
     {:ok, client} = :gen_tcp.accept(socket)
-    {:ok, pid} = Task.Supervisor.start_child(ElixirFakeIm.SocketSupervisor, fn -> Connection.login(client) end)
+    {:ok, pid} = Task.Supervisor.start_child(ElixirFakeIm.SocketSupervisor, fn -> Connection.start_connection(client) end)
     :ok = :gen_tcp.controlling_process(client, pid)
     loop_acceptor(socket)
   end

@@ -4,12 +4,16 @@ defmodule ElixirFakeIm.GroupAgent do
     Agent.start_link(fn -> [] end)
   end
 
-  def get_sockets(ga) do
-	Agent.get(ga, &(&1))
+  def get_users(ga) do
+    Agent.get(ga, &(&1))
   end
 
-  def add_socket(ga, socket) do
-    Agent.update(ga, fn list -> [socket | list] end)
+  def add_user(ga, user_pid) do
+    Agent.update(ga, fn list -> [user_pid | list] end)
+  end
+
+  def remove_user(ga, user_pid) do
+    Agent.update(ga, &(List.delete(&1, user_pid)))
   end
 
 end

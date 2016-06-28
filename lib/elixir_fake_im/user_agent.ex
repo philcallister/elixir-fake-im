@@ -1,15 +1,15 @@
 defmodule ElixirFakeIm.UserAgent do
 
   def start_link do
-    Agent.start_link(fn -> %{socket: nil, groups: []} end)
+    Agent.start_link(fn -> %{user_pid: nil, groups: []} end)
   end
 
-  def get_socket(ua) do
-    Agent.get(ua, &Map.get(&1, :socket))
+  def get_user(ua) do
+    Agent.get(ua, &Map.get(&1, :user_pid))
   end
 
-  def put_socket(ua, value) do
-    Agent.update(ua, &Map.put(&1, :socket, value))
+  def put_user(ua, value) do
+    Agent.update(ua, &Map.put(&1, :user_pid, value))
   end
 
   def get_groups(ua) do
@@ -24,7 +24,14 @@ defmodule ElixirFakeIm.UserAgent do
   def add_group(ua, value) do
     Agent.update(ua, fn(map) ->
       groups = Map.get(map, :groups)
-      Map.put(map, :groups, [value | groups]) end)
+      Map.put(map, :groups, [value | groups])
+    end)
+  end
+
+  def remove_group(ua, value) do
+    Agent.update(ua, fn(map) ->
+      Map.update!(map, :groups, &(List.delete(&1, value)))
+    end)
   end
 
 end
