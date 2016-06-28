@@ -6,7 +6,7 @@ Instant Messenger. It makes no attempt to follow standards, such as XMPP.
 
 The sample was developed using the following 
 
-- Elixir 1.2.4
+- Elixir 1.3.0
 - OS X El Capitan (10.11)
 
 ## Setup
